@@ -1,0 +1,213 @@
+---
+title: "AttritionAnalysis"
+author: "Chrissie Aldo"
+date: '2022-06-09'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r packages}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+```
+
+
+
+```{r}
+
+data <- read.csv("~/dataset/group project/AttritionData.csv", header=T)
+#data1<- read.csv("~/dataset/group project/AttritionData.csv", header=T)
+
+orginalData<- data
+
+missing_values <- sapply(data, function(x) sum(is.na(x)))
+sum(missing_values)
+
+
+```
+
+```{r}
+
+if (!require(jtools)) {
+install.packages("jtools")
+library(jtools)
+}
+
+
+```
+
+```{r}
+head(data1)
+
+```
+
+
+```{r}
+attrition<- data1$Attrition
+
+m<-glm(attrition~ ,data=data1,family=binomial)
+summ(m,vifs=TRUE)
+
+```
+
+
+
+
+```{r}
+if (!require(smotefamily)) {
+install.packages("smotefamily")
+library(smotefamily)
+}
+
+```
+
+```{r}
+data1<-read.csv("~/dataset/group project/test1.csv", header=T)
+str(data1)
+
+```
+
+
+```{r}
+new_df <- SMOTE(data1[,-2],data1[,2],K=7)
+str(new_df)
+
+
+```
+
+
+
+```{r}
+library(tidyverse)
+table(new_df$data$Attrition)
+table(data1$Attrition)
+
+df2<-new_df$syn_data
+df2<-df2 |> mutate(Attrition=1,.after=Age)
+
+df3<-bind_rows(data1,df2)
+df3
+
+#sample the dataset to get the training set and test set
+#last few records have yes values
+
+```
+```{r}
+df3<-select(df3,-class)
+
+
+```
+
+
+
+```{r}
+if (!require(jtools)) {
+  install.packages("jtools")
+  library(jtools)
+}
+
+df3$Attrition<-as.factor(df3$Attrition)
+
+names(df3)
+
+df4<-df3 %>% mutate(across(BusinessTravel:Job_mode,as.integer))
+df4
+
+
+m<-glm(Attrition~ .-JobLevel-MonthlyIncome-Percent3Hike-JobRole-Age,data=df4,family=binomial)#logistic regression
+summ(m,vifs=TRUE)
+#remove attributes whose vif value is greater than 5 
+#remove attributes whose pvalue is greater than 0.1
+#run df4 in the model- random forest
+
+```
+
+
+
+```{r }
+data$Attrition <- ifelse(data$Attrition == "no",0,1)
+data$OverTime <- ifelse(data$OverTime == "yes",1,0)
+data$Gender <- ifelse(data$Gender == "Male",1,0)
+data$BusinessTravel <- as.numeric(factor(data$BusinessTravel, 
+                                         levels=c("Non-Travel", "Travel_Rarely", "Travel_Frequently"))) -1
+data$HumanResources <- ifelse(data$Department == "Human Resources",1,0)
+data$ResearchDevelopment <- ifelse(data$Department == "Research & Development",1,0)
+data$Sales <- ifelse(data$Department == "Sales",1,0)
+data$Single <- ifelse(data$MaritalStatus == "Single",1,0)
+data$Married <- ifelse(data$MaritalStatus == "Married",1,0)
+data$Divorced <- ifelse(data$MaritalStatus == "Divorced",1,0)
+
+data$JobSalesExecutive <- ifelse(data$JobRole == "SE",1,0)
+data$JobResearchDirector <- ifelse(data$JobRole == "RD",1,0)
+data$JobManufacturingDirector <- ifelse(data$JobRole == "MD",1,0)
+data$JobResearchScientist <- ifelse(data$JobRole == "RS",1,0)
+
+data$JobSalesRepresentative <- ifelse(data$JobRole == "SRep",1,0)
+data$JobManager <- ifelse(data$JobRole == "Mngr",1,0)
+data$JobHealthcareRepresentative <- ifelse(data$JobRole == "HCR",1,0)
+data$JobHumanResources <- ifelse(data$JobRole == "HR",1,0)
+data$JobLaboratoryTechnician <- ifelse(data$JobRole == "LT",1,0)
+
+```
+
+
+
+```{r}
+
+colnames(data)
+
+```
+
+
+
+
+```{r}
+pIncome <- data %>% ggplot(aes(MonthlyIncome, Attrition)) + geom_smooth() 
+pDistance <- data %>% ggplot(aes(DistanceFromHome, Attrition)) + geom_smooth()
+pSalaryHike <- data %>% ggplot(aes(PercentSalaryHike, Attrition)) + geom_smooth()
+pCompanies <- data %>% ggplot(aes(NumCompaniesWorked, Attrition)) + geom_smooth()
+
+
+pAge <- data %>% ggplot(aes(Age, Attrition)) + geom_smooth()
+pYearsCompany <- data %>% ggplot(aes(YearsAtCompany, Attrition)) + geom_smooth()
+
+pPromotion <- data %>% ggplot(aes(YearsSinceLastPromotion, Attrition)) + geom_smooth()
+pYearsManager <- data %>% ggplot(aes(YearsWithCurrManager, Attrition)) + geom_smooth()
+pYearsWorking <- data %>% ggplot(aes(TotalWorkingYears, Attrition)) + geom_smooth()
+grid.arrange(pIncome,pDistance,pSalaryHike,pCompanies,pAge,pYearsCompany,pPromotion,pYearsManager,pYearsWorking, ncol=3, nrow=3)
+
+```
+
+
+```{r}
+colnames(data)
+
+```
+
+
+
+```{r}
+pAttrition <- orginalData %>% group_by(Attrition) %>% summarise(count = n()) %>% 
+    mutate(Percent = (count / sum(count))*100) %>% 
+    ggplot() + geom_bar(aes(y=Percent, x=Attrition, fill=Attrition), stat = "identity")
+pDept <- orginalData %>% ggplot(aes(Department, fill=Attrition)) + geom_bar()  + coord_flip()
+pMarital <- orginalData %>% ggplot(aes(MaritalStatus, fill=Attrition)) + geom_bar()
+pGender <- orginalData %>% ggplot(aes(Gender, fill=Attrition)) + geom_bar()
+grid.arrange(pAttrition, pDept, pMarital,pGender, ncol=2, nrow=2)
+
+orginalData %>% ggplot(aes(JobRole, fill=Attrition)) + geom_bar() + coord_flip() + coord_flip() +  labs(title="Attrition by Job Role", y="Employees")
+```
+
+
+
+
+
+
+
+
