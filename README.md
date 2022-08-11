@@ -1,2 +1,2 @@
 # MyWorkspace
-My Workspace is where I try out codes.
+MyWorkspace is where I try out codes.
