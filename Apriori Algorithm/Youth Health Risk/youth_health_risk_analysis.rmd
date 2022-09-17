@@ -1,0 +1,61 @@
+---
+title: "Youth Health Risk Analysis"
+author: "Chrissie Aldo"
+date: "2022-09-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Packages
+
+```{r packages, eval=TRUE,echo=TRUE}
+library(dplyr)
+library(arules) #association rules
+library(arulesViz)
+
+
+```
+
+
+
+```{r chunk= 1, eval=TRUE,echo=TRUE}
+
+youth_health <- read.transactions("~/My Workspace/YouthRiskHealth2.csv", sep=",")
+(youth_health)
+
+inspect(youth_health[1:20])
+
+health_rule<-apriori(youth_health,, parameter = list(supp = 0.01, conf = 0.9))
+
+summary(health_rule)
+
+inspect(health_rule[5649])
+
+inspect(health_rule[1:100])
+
+```
+
+Visualizing the rules
+
+```{r chunk = 2, eval =TRUE, echo=TRUE}
+
+
+plot(health_rule, jitter=0)
+plot(health_rule,method = "graph", limit=20)
+
+```
+if the lift >1 ,then the  victimization (fighting, bullying, sexual abuse), substance use (Tabaco, alcohol and another drug use) and suicide are more likely to occur
+
+Rules generated after sorting the confidence
+
+```{r chunk=3, echo=TRUE, eval=TRUE}
+
+
+inspect(sort(health_rule,by = "lift"))
+
+
+```
+
